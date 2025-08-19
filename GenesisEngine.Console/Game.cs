@@ -29,6 +29,10 @@ namespace GameTest
             {
                 Console.WriteLine("Usuário apertou A");
             }
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                this.Close();
+            }
         }
 
         public override void OnRender(double deltaTime)
