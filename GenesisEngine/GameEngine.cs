@@ -47,5 +47,13 @@ namespace GenesisEngine
         {
 
         }
+
+        public void Close()
+        {
+            if (window != null)
+            {
+                this.window!.Close();
+            }
+        }
     }
 }
