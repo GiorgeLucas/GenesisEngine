@@ -1,3 +1,4 @@
 ﻿using GameTest;
 
-Game worldSimulator = new Game("Just a simple game", (800, 600));
+Game worldSimulator = new Game();
+worldSimulator.Run();

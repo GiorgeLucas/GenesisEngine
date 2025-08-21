@@ -1,11 +1,14 @@
 ﻿using GenesisEngine;
+using GenesisEngine.Components;
 using GenesisEngine.InputManager;
 
 namespace GameTest
 {
     public class Game : GameEngine
     {
-        public Game(string windowTitle, (int, int) windowSize) : base(windowTitle, windowSize)
+        Entity Player;
+
+        public Game() : base("Just a simple game", (800, 600))
         {
 
         }
@@ -14,7 +17,14 @@ namespace GameTest
         {
             base.OnLoad();
             Console.WriteLine("Game Loading...");
+            // Crie a textura aqui, depois do base.OnLoad()
+            var playerTexture = new Texture(_gl!, "silk.jpg");
 
+            Player = EntityManager.CreateEntity();
+            Player.AddComponent(new Transform());
+            Player.AddComponent(new SpriteRenderer(playerTexture));
+
+            Console.WriteLine("Player Texture: " + Player.GetComponent<SpriteRenderer>()?.Texture);
         }
 
         public override void OnUpdate(double deltaTime)
