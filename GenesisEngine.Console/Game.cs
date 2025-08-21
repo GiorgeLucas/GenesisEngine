@@ -22,6 +22,9 @@ namespace GameTest
 
             Player = EntityManager.CreateEntity();
             Player.AddComponent(new Transform());
+            var transform = Player.GetComponent<Transform>();
+            transform.Position = new System.Numerics.Vector3(1.5f, 1.0f, 0);
+
             Player.AddComponent(new SpriteRenderer(playerTexture));
 
             Console.WriteLine("Player Texture: " + Player.GetComponent<SpriteRenderer>()?.Texture);
@@ -31,17 +34,48 @@ namespace GameTest
         {
             base.OnUpdate(deltaTime);
 
-            if (Input.GetKeyPressed(KeyCode.D))
+            var transform = Player.GetComponent<Transform>();
+            transform.Scale = new System.Numerics.Vector3(64f, 64f, 1f);
+
+            if (Input.GetKeyPressed(KeyCode.T))
             {
-                Console.WriteLine("Usuário pressionou D");
+                transform.Scale = new System.Numerics.Vector3(transform.Scale.X + 20f, transform.Scale.Y + 20f, 1f);
             }
-            if (Input.GetKeyDown(KeyCode.A))
+
+            if (Input.GetKeyPressed(KeyCode.G))
             {
-                Console.WriteLine("Usuário apertou A");
+                transform.Scale = new System.Numerics.Vector3(transform.Scale.X - 20f, transform.Scale.Y - 20f, 1f);
             }
-            if (Input.GetKeyDown(KeyCode.Escape))
+
+            // Reset para posição visível primeiro
+            if (Input.GetKeyDown(KeyCode.R))
             {
-                this.Close();
+                transform.Position = new System.Numerics.Vector3(100f, 100f, 0f);
+                Console.WriteLine($"Reset para: {transform.Position}");
+            }
+
+            if (Input.GetKeyPressed(KeyCode.D)) // Use GetKeyDown
+            {
+                transform.Position = new System.Numerics.Vector3(transform.Position.X + 0.2f, transform.Position.Y, 0f);
+                Console.WriteLine($"Movendo para: {transform.Position}");
+            }
+
+            if (Input.GetKeyPressed(KeyCode.W))
+            {
+                transform.Position = new System.Numerics.Vector3(transform.Position.X, transform.Position.Y + 0.2f, 0f);
+                Console.WriteLine($"Movendo para: {transform.Position}");
+            }
+
+            if (Input.GetKeyPressed(KeyCode.S))
+            {
+                transform.Position = new System.Numerics.Vector3(transform.Position.X, transform.Position.Y - 0.2f, 0f);
+                Console.WriteLine($"Movendo para: {transform.Position}");
+            }
+
+            if (Input.GetKeyPressed(KeyCode.A))
+            {
+                transform.Position = new System.Numerics.Vector3(transform.Position.X - 0.2f, transform.Position.Y, 0f);
+                Console.WriteLine($"Movendo para: {transform.Position}");
             }
         }
 

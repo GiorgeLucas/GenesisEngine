@@ -38,17 +38,12 @@ namespace GenesisEngine.Components
 
         public Matrix4X4<float> GetTransformMatrix()
         {
-            // 1️⃣ Escala
             Matrix4X4<float> scaleMatrix = Matrix4X4.CreateScale(Scale.X, Scale.Y, 1f);
-
-            // 2️⃣ Rotação em Z
             Matrix4X4<float> rotationMatrix = Matrix4X4.CreateRotationZ(Rotation);
-
-            // 3️⃣ Translação
             Matrix4X4<float> translationMatrix = Matrix4X4.CreateTranslation(Position.X, Position.Y, 0f);
 
-            // 4️⃣ Multiplicar na ordem correta: Scale -> Rotate -> Translate
-            return scaleMatrix * rotationMatrix * translationMatrix;
+            // Ordem correta: TRS (Translation * Rotation * Scale)
+            return translationMatrix * rotationMatrix * scaleMatrix;
         }
     }
 }

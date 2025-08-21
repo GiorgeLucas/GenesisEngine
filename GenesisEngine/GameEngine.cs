@@ -1,10 +1,9 @@
-﻿using GenesisEngine.InputManager;
+﻿using GenesisEngine.Components;
+using GenesisEngine.InputManager;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
-using StbImageSharp;
-using System.Drawing;
 using System.Numerics;
 
 namespace GenesisEngine
@@ -56,7 +55,7 @@ namespace GenesisEngine
 
             _gl = window.CreateOpenGL();
 
-            _gl.ClearColor(Color.CornflowerBlue);
+            _gl.ClearColor(System.Drawing.Color.CornflowerBlue);
 
             // Create the VAO.
             _vao = _gl.GenVertexArray();
@@ -107,12 +106,15 @@ namespace GenesisEngine
         // On top of our aPosition attribute, we now create an aTexCoords attribute for our texture coordinates.
         layout (location = 1) in vec2 aTexCoords;
 
+        uniform mat4 uProjection;
+        uniform mat4 uTransform;
+
         // Likewise, we also assign an out attribute to go into the fragment shader.
         out vec2 frag_texCoords;
         
         void main()
         {
-            gl_Position = vec4(aPosition, 1.0);
+            gl_Position = uProjection * uTransform * vec4(aPosition, 1.0);
 
             // This basic vertex shader does no additional processing of texture coordinates, so we can pass them
             // straight to the fragment shader.
@@ -206,72 +208,7 @@ namespace GenesisEngine
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
 
-            // Now we create our texture!
-            // First, we create the texture itself. Then, we must set an active texture unit. Each texture unit is a
-            // separate bindable texture that we can use in a shader. GPUs have a maximum number of texture units they
-            // can use, however the OpenGL spec states there MUST be at least 32 units available.
-            // Much like buffers, we then bind the texture to a Texture2D target.
-            _texture = _gl.GenTexture();
-            _gl.ActiveTexture(TextureUnit.Texture0);
-            _gl.BindTexture(TextureTarget.Texture2D, _texture);
-
-            // Use StbImageSharp to load an image from our PNG file.
-            // This will load and decompress the result into a raw byte array that we can pass directly into OpenGL.
-            ImageResult result = ImageResult.FromMemory(File.ReadAllBytes("silk.jpg"), ColorComponents.RedGreenBlueAlpha);
-
-            fixed (byte* ptr = result.Data)
-            {
-                // Upload our texture data to the GPU.
-                // Let's go over each parameter used here:
-                // 1. Tell OpenGL that we want to upload to the texture bound in the Texture2D target.
-                // 2. We are uploading the "base" texture level, therefore this value should be 0. You don't need to
-                //    worry about texture levels for now.
-                // 3. We tell OpenGL that we want the GPU to store this data as RGBA formatted data on the GPU itself.
-                // 4. The image's width.
-                // 5. The image's height.
-                // 6. This is the image's border. This valu MUST be 0. It is a leftover component from legacy OpenGL, and
-                //    it serves no purpose.
-                // 7. Our image data is formatted as RGBA data, therefore we must tell OpenGL we are uploading RGBA data.
-                // 8. StbImageSharp returns this data as a byte[] array, therefore we must tell OpenGL we are uploading
-                //    data in the unsigned byte format.
-                // 9. The actual pointer to our data!
-                _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba, (uint)result.Width,
-                    (uint)result.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ptr);
-            }
-
-            // Let's set some texture parameters!
-            // This tells the GPU how it should sample the texture.
-
-            // Set the texture wrap mode to repeat.
-            // The texture wrap mode defines what should happen when the texture coordinates go outside of the 0-1 range.
-            // In this case, we set it to repeat. The texture will just repeatedly tile over and over again.
-            // You'll notice we're using S and T wrapping here. This is OpenGL's version of the standard UV mapping you
-            // may be more used to, where S is on the X-axis, and T is on the Y-axis.
-            _gl.TextureParameter(_texture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            _gl.TextureParameter(_texture, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-
-            // The min and mag filters define how the texture should be sampled as it resized.
-            // The min, or minification filter, is used when the texture is reduced in size.
-            // The mag, or magnification filter, is used when the texture is increased in size.
-            // We're using bilinear filtering here, as it produces a generally nice result.
-            // You can also use nearest (point) filtering, or anisotropic filtering, which is only available on the min
-            // filter.
-            // You may notice that the min filter defines a "mipmap" filter as well. We'll go over mipmaps below.
-            _gl.TextureParameter(_texture, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
-            _gl.TextureParameter(_texture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-
-            // Generate mipmaps for this texture.
-            // Note: We MUST do this or the texture will appear as black (this is an option you can change but this is
-            // out of scope for this tutorial).
-            // What is a mipmap?
-            // A mipmap is essentially a smaller version of the existing texture. When generating mipmaps, the texture
-            // size is continuously halved, generally stopping once it reaches a size of 1x1 pixels. (Note: there are
-            // exceptions to this, for example if the GPU reaches its maximum level of mipmaps, which is both a hardware
-            // limitation, and a user defined value. You don't need to worry about this for now, so just assume that
-            // the mips will be generated all the way down to 1x1 pixels).
-            // Mipmaps are used when the texture is reduced in size, to produce a much nicer result, and to reduce moire
-            // effect patterns.
-            _gl.GenerateMipmap(TextureTarget.Texture2D);
+            SetupProjection();
 
             // Unbind the texture as we no longer need to update it any further.
             _gl.BindTexture(TextureTarget.Texture2D, 0);
@@ -307,16 +244,11 @@ namespace GenesisEngine
         public virtual unsafe void OnRender(double deltaTime)
         {
             _gl!.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
             _gl.BindVertexArray(_vao);
             _gl!.UseProgram(_program);
 
-            Texture a = new Texture(_gl, "silk.jpg");
-            a.Bind();
-
-            _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
             // renderização aqui
-            /*var entities = EntityManager.GetEntitiesWith<SpriteRenderer>()
+            var entities = EntityManager.GetEntitiesWith<SpriteRenderer>()
                    .Where(e => e.HasComponent<Transform>());
 
             entities = entities.OrderBy(e => e.GetComponent<SpriteRenderer>()!.Layer);
@@ -326,7 +258,7 @@ namespace GenesisEngine
                 var tr = entity.GetComponent<Transform>()!;
 
                 if (!sr.Enabled) continue;
-                Console.WriteLine($"Position: {tr.Position}, Scale: {tr.Scale}, Rotation: {tr.Rotation}");
+
 
                 Matrix4X4<float> model = tr.GetTransformMatrix(); // posição, rotação, escala
                 float[] TransformArray = {
@@ -335,6 +267,9 @@ namespace GenesisEngine
                     model.M31, model.M32, model.M33, model.M34,
                     model.M41, model.M42, model.M43, model.M44
                 };
+
+
+
                 int matrixLocation = _gl.GetUniformLocation(_program, "uTransform");
                 _gl.UniformMatrix4(matrixLocation, 1, false, TransformArray);
 
@@ -342,19 +277,25 @@ namespace GenesisEngine
 
                 _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (void*)0);
 
-            }*/
+            }
         }
         private void SetupProjection()
         {
-            _projectionMatrix = Matrix4x4.CreateOrthographic(window!.Size.X, window.Size.Y, -1f, 1f);
+            Console.WriteLine("Width: " + window!.Size.X + ", Height: " + window.Size.Y);
+            _projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(
+               0f, window!.Size.X,     // 0 a 800
+               0f, window.Size.Y,     // 600 a 0 (Y invertido)
+               -1f, 1f);
+
             _gl!.UseProgram(_program);
             int projLocation = _gl!.GetUniformLocation(_program, "uProjection");
+
             float[] projectionArray = {
-                    _projectionMatrix.M11, _projectionMatrix.M12, _projectionMatrix.M13, _projectionMatrix.M14,
-                    _projectionMatrix.M21, _projectionMatrix.M22, _projectionMatrix.M23, _projectionMatrix.M24,
-                    _projectionMatrix.M31, _projectionMatrix.M32, _projectionMatrix.M33, _projectionMatrix.M34,
-                    _projectionMatrix.M41, _projectionMatrix.M42, _projectionMatrix.M43, _projectionMatrix.M44
-                };
+                _projectionMatrix.M11, _projectionMatrix.M12, _projectionMatrix.M13, _projectionMatrix.M14,
+                _projectionMatrix.M21, _projectionMatrix.M22, _projectionMatrix.M23, _projectionMatrix.M24,
+                _projectionMatrix.M31, _projectionMatrix.M32, _projectionMatrix.M33, _projectionMatrix.M34,
+                _projectionMatrix.M41, _projectionMatrix.M42, _projectionMatrix.M43, _projectionMatrix.M44
+            };
             _gl.UniformMatrix4(projLocation, false, projectionArray);
         }
 
