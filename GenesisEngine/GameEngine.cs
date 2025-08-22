@@ -18,6 +18,7 @@ namespace GenesisEngine
 
         private Mesh _quadMesh;
         private Shader _shader;
+        private SpriteBatcher _spriteBatcher;
 
         private IInputContext? _inputContext;
 
@@ -84,6 +85,8 @@ namespace GenesisEngine
             SetupProjection();
 
             LoadResources();
+
+            _spriteBatcher = new SpriteBatcher(Renderer);
         }
 
         public virtual void OnUpdate(double deltaTime)
@@ -96,20 +99,21 @@ namespace GenesisEngine
             Renderer.Clear(1f, 1f, 1f, 1f);
 
             var entities = EntityManager.GetEntitiesWith<SpriteRenderer>()
-                   .Where(e => e.HasComponent<Transform>());
+               .Where(e => e.HasComponent<Transform>() && e.GetComponent<SpriteRenderer>()!.Enabled)
+               .OrderBy(e => e.GetComponent<SpriteRenderer>()!.Layer)
+               .ThenBy(e => e.GetComponent<SpriteRenderer>()!.Texture.handle);
 
-            entities = entities.OrderBy(e => e.GetComponent<SpriteRenderer>()!.Layer);
+            _spriteBatcher.Begin(_shader, _quadMesh);
+
             foreach (var entity in entities)
             {
                 var sr = entity.GetComponent<SpriteRenderer>()!;
                 var tr = entity.GetComponent<Transform>()!;
 
-                if (!sr.Enabled) continue;
-
-                Matrix4x4 model = tr.GetTransformMatrix(); // posição, rotação, escala
-
-                Renderer.Draw(_quadMesh, _shader, sr.Texture, model);
+                _spriteBatcher.DrawSprite(sr.Texture, tr.GetTransformMatrix());
             }
+
+            _spriteBatcher.End();
         }
         private void SetupProjection()
         {

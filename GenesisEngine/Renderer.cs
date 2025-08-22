@@ -7,6 +7,10 @@ namespace GenesisEngine.Graphics
     {
         private readonly GL _gl;
         private Matrix4x4 _projection;
+
+        private Shader? _currentShader;
+        private Texture? _currentTexture;
+        private Mesh? _currentMesh;
         public Renderer(GL gl)
         {
             _gl = gl;
@@ -56,15 +60,53 @@ namespace GenesisEngine.Graphics
 
         public unsafe void Draw(Mesh mesh, Shader shader, Texture texture, Matrix4x4 transform)
         {
-            shader.Use();
-            shader.SetUniform("uTransform", transform);
-            shader.SetUniform("uTexture", 0);
-            shader.SetUniform("uProjection", _projection);
+            UseShader(shader);
+            BindTexture(texture);
+            BindMesh(mesh);
+            SetTransform(transform);
+            DrawCurrent();
+        }
 
-            texture.Bind();
-            mesh.Bind();
+        public void UseShader(Shader shader)
+        {
+            if (_currentShader != shader)
+            {
+                shader.Use();
+                shader.SetUniform("uProjection", _projection);
+                shader.SetUniform("uTexture", 0);
+                _currentShader = shader;
+            }
+        }
+        public void BindTexture(Texture texture)
+        {
+            if (_currentTexture != texture)
+            {
+                texture.Bind();
+                _currentTexture = texture;
+            }
+        }
 
-            _gl.DrawElements(PrimitiveType.Triangles, mesh.IndexCount, DrawElementsType.UnsignedInt, (void*)0);
+        public void BindMesh(Mesh mesh)
+        {
+            if (_currentMesh != mesh)
+            {
+                mesh.Bind();
+                _currentMesh = mesh;
+            }
+        }
+
+        public void SetTransform(Matrix4x4 transform)
+        {
+            _currentShader?.SetUniform("uTransform", transform);
+        }
+
+        public unsafe void DrawCurrent()
+        {
+            if (_currentMesh != null)
+            {
+                _gl.DrawElements(PrimitiveType.Triangles, _currentMesh.IndexCount,
+                           DrawElementsType.UnsignedInt, (void*)0);
+            }
         }
 
     }
