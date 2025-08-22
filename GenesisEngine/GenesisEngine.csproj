@@ -13,9 +13,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="silk.jpg">
+    <None Update="Shaders\fragment.frag">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Shaders\vertex.vert">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="silk.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Shaders\" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
-﻿using Silk.NET.Maths;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace GenesisEngine.Components
 {
@@ -36,11 +35,11 @@ namespace GenesisEngine.Components
             Scale = scale;
         }
 
-        public Matrix4X4<float> GetTransformMatrix()
+        public Matrix4x4 GetTransformMatrix()
         {
-            Matrix4X4<float> scaleMatrix = Matrix4X4.CreateScale(Scale.X, Scale.Y, 1f);
-            Matrix4X4<float> rotationMatrix = Matrix4X4.CreateRotationZ(Rotation);
-            Matrix4X4<float> translationMatrix = Matrix4X4.CreateTranslation(Position.X, Position.Y, 0f);
+            Matrix4x4 scaleMatrix = Matrix4x4.CreateScale(Scale.X, Scale.Y, 1f);
+            Matrix4x4 rotationMatrix = Matrix4x4.CreateRotationZ(Rotation);
+            Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(Position.X, Position.Y, 0f);
 
             // Ordem correta: TRS (Translation * Rotation * Scale)
             return translationMatrix * rotationMatrix * scaleMatrix;
